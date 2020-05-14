@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
 using Newtonsoft.Json;
@@ -34,6 +35,7 @@ namespace OpenFeign.net
 
             var pathVariables = new Dictionary<string, string>();
             var requestParameters = new Dictionary<string, string>();
+            var headerParameters = new Dictionary<string, string>();
             var bodyParameters = new Dictionary<string, object>();
 
             for (var index = 0; index < targetMethod.GetParameters().Length; index++)
@@ -61,7 +63,8 @@ namespace OpenFeign.net
                         bodyParameters.Add(key, arg);
                         break;
                     case ParameterType.Header:
-                        throw new NotImplementedException("header parameter is not supported now");
+                        headerParameters.Add(key, arg?.ToString());
+                        break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
@@ -87,6 +90,10 @@ namespace OpenFeign.net
             endPoint = serverAddress + endPoint;
 
             var message = new HttpRequestMessage(requestMethod.Method, endPoint);
+            foreach (var headerParameter in headerParameters)
+            {
+                message.Headers.Add(headerParameter.Key, headerParameter.Value);
+            }
             var bodyJson =
                 JsonConvert.SerializeObject(bodyParameters.Count == 1 ? bodyParameters.First().Value : bodyParameters);
             message.Content = new StringContent(bodyJson, Encoding.UTF8, "application/json");
