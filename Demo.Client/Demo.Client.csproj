@@ -5,7 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
+    <ProjectReference Include="..\Demo.Api\Demo.Api.csproj" />
+    <ProjectReference Include="..\OpenFeign.net\OpenFeign.net.csproj" />
   </ItemGroup>
 
 

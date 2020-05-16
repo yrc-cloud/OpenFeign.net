@@ -7,6 +7,6 @@ namespace Demo.Api
     public interface IServerApi
     {
         [HttpGet]
-        EchoObject TestGet(string id);
+        EchoObject TestGet([QueryParameter]string id);
     }
 }

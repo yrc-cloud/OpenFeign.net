@@ -11,5 +11,12 @@ namespace OpenFeign.net
         {
             return DispatchProxy.Create<T, HttpProxy>();
         }
+
+        public static object GenerateClientByType(Type type)
+        {
+            var method = typeof(OpenFeign).GetMethod("GenerateClient");
+            var generic = method.MakeGenericMethod(type);
+            return generic.Invoke(null, null);
+        }
     }
 }

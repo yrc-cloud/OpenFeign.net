@@ -19,7 +19,11 @@ namespace Demo.Server.Controllers
             return new EchoObject()
             {
                 RequestMethod = "Get",
-                RequestUrl = Request.GetDisplayUrl()
+                RequestUrl = Request.GetDisplayUrl(),
+                QueryParameters = new Dictionary<string, string>
+                {
+                    {"id", id }
+                }
             };
         }
     }
