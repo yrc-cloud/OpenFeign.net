@@ -3,10 +3,10 @@ using OpenFeign.net.Attributes;
 
 namespace Demo.Api
 {
-    [FeignClient(Name = "server", Url = "http://localhost:5000/")]
+    [FeignClient(Name = "server", Url = "http://localhost:5005/")]
     public interface IServerApi
     {
-        [HttpGet]
+        [HttpGet(Path = "api/test")]
         EchoObject TestGet([QueryParameter]string id);
     }
 }
