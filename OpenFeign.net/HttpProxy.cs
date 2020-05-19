@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 
 namespace OpenFeign.net
@@ -106,6 +107,18 @@ namespace OpenFeign.net
             }
 
             return null;
+        }
+
+        private async Task<T> InvokeAsync<T>(HttpRequestMessage message)
+        {
+            var response = await HttpClient.SendAsync(message);
+            if (response.IsSuccessStatusCode)
+            {
+                var json = response.Content.ReadAsStringAsync().Result;
+                return JsonConvert.DeserializeObject<T>(json);
+            }
+
+            return default(T);
         }
     }
 }
