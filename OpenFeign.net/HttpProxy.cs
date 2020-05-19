@@ -99,6 +99,13 @@ namespace OpenFeign.net
                 JsonConvert.SerializeObject(bodyParameters.Count == 1 ? bodyParameters.First().Value : bodyParameters);
             message.Content = new StringContent(bodyJson, Encoding.UTF8, "application/json");
 
+            if (targetMethod.ReturnType.GetGenericTypeDefinition() == typeof(Task<>))
+            {
+                var method = typeof(HttpProxy).GetMethod(nameof(InvokeAsync));
+                var generic = method.MakeGenericMethod(targetMethod.ReturnType);
+                return generic.Invoke(this, null);
+            }
+
             var response = HttpClient.SendAsync(message).Result;
             if (response.IsSuccessStatusCode)
             {
