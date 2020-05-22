@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using OpenFeign.net.Attributes;
 
 namespace Demo.Api
@@ -8,5 +9,11 @@ namespace Demo.Api
     {
         [HttpGet(Path = "api/test")]
         EchoObject TestGet([QueryParameter]string id);
+
+        [HttpGet(Path = "api/test")]
+        Task<EchoObject> TestGetAsync([QueryParameter]string id);
+
+        [HttpGet(Path = "api/test")]
+        Task TestGetAsync();
     }
 }

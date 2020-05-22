@@ -5,7 +5,7 @@
  - [ ] add retry
  - [x] add header parameter
  - [ ] add return value contract
- - [ ] support async method
+ - [x] support async method
  - [ ] add httpclients
  - [ ] add encodes/decodes
  - [ ] add fallback

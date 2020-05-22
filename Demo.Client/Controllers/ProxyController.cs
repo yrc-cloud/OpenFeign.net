@@ -24,5 +24,17 @@ namespace Demo.Client.Controllers
         {
             return ServerApi.TestGet(id);
         }
+
+        [HttpGet("async")]
+        public async Task<object> ProxyGetAsync(string id)
+        {
+            return await ServerApi.TestGetAsync(id);
+        }
+
+        [HttpGet("async/no-result")]
+        public async Task ProxyGetAsync()
+        {
+            await ServerApi.TestGetAsync();
+        }
     }
 }

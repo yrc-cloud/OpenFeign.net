@@ -99,11 +99,21 @@ namespace OpenFeign.net
                 JsonConvert.SerializeObject(bodyParameters.Count == 1 ? bodyParameters.First().Value : bodyParameters);
             message.Content = new StringContent(bodyJson, Encoding.UTF8, "application/json");
 
-            if (targetMethod.ReturnType.GetGenericTypeDefinition() == typeof(Task<>))
+            if (targetMethod.ReturnType.GetInterfaces().Any(i => i == typeof(IAsyncResult)))
             {
-                var method = typeof(HttpProxy).GetMethod(nameof(InvokeAsync));
-                var generic = method.MakeGenericMethod(targetMethod.ReturnType);
-                return generic.Invoke(this, null);
+                if (targetMethod.ReturnType.IsGenericType &&
+                    targetMethod.ReturnType.GetGenericTypeDefinition() == typeof(Task<>))
+                {
+                    var method = GetType().GetMethod(nameof(InvokeAsync), BindingFlags.Instance | BindingFlags.NonPublic);
+                    var generic = method.MakeGenericMethod(targetMethod.ReturnType.GenericTypeArguments);
+                    return generic.Invoke(this, new []{message});
+                }
+
+                if (targetMethod.ReturnType == typeof(Task))
+                {
+                    var method = GetType().GetMethod(nameof(InvokeWithNoResultAsync), BindingFlags.Instance | BindingFlags.NonPublic);
+                    return method.Invoke(this, new[] { message });
+                }
             }
 
             var response = HttpClient.SendAsync(message).Result;
@@ -116,7 +126,7 @@ namespace OpenFeign.net
             return null;
         }
 
-        private async Task<T> InvokeAsync<T>(HttpRequestMessage message)
+        protected async Task<T> InvokeAsync<T>(HttpRequestMessage message)
         {
             var response = await HttpClient.SendAsync(message);
             if (response.IsSuccessStatusCode)
@@ -125,7 +135,12 @@ namespace OpenFeign.net
                 return JsonConvert.DeserializeObject<T>(json);
             }
 
-            return default(T);
+            return default;
+        }
+
+        protected async Task InvokeWithNoResultAsync(HttpRequestMessage message)
+        {
+            await HttpClient.SendAsync(message);
         }
     }
 }
