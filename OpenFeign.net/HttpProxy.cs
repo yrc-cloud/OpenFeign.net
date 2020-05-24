@@ -15,25 +15,45 @@ namespace OpenFeign.net
     public class HttpProxy : DispatchProxy
     {
         private HttpClient HttpClient => new HttpClient();
-        protected override object Invoke(MethodInfo targetMethod, object[] args)
+
+        protected string ServerAddress { get; set; }
+
+        public void SetServerAddress(string url)
         {
-            var type = targetMethod.DeclaringType;
-            var serverAddress = "";
-            if (type != null)
+            if (!string.IsNullOrEmpty(ServerAddress))
             {
-                var serviceAttribute =
-                    type.GetCustomAttribute<FeignClientAttribute>();
-                if (serviceAttribute == null)
-                {
-                    throw new Exception("No FeignClientAttribute found");
-                }
-                serverAddress = serviceAttribute.Url;
-                if (string.IsNullOrEmpty(serverAddress))
-                {
-                    throw new Exception("server address is empty");
-                }
+                throw new Exception("server address is already set");
             }
 
+            ServerAddress = url;
+        }
+
+        public static T Create<T>() where T : class
+        {
+            var type = typeof(T);
+
+            var serviceAttribute =
+                type.GetCustomAttribute<FeignClientAttribute>();
+            if (serviceAttribute == null)
+            {
+                throw new Exception("No FeignClientAttribute found on type:" + type.FullName);
+            }
+            if (string.IsNullOrEmpty(serviceAttribute.Url))
+            {
+                throw new Exception("server address is empty");
+            }
+
+            var obj = DispatchProxy.Create<T, HttpProxy>();
+
+            if (obj is HttpProxy proxy)
+            {
+                proxy.SetServerAddress(serviceAttribute.Url);
+            }
+
+            return obj;
+        }
+        protected override object Invoke(MethodInfo targetMethod, object[] args)
+        {
             var pathVariables = new Dictionary<string, string>();
             var requestParameters = new Dictionary<string, string>();
             var headerParameters = new Dictionary<string, string>();
@@ -88,7 +108,7 @@ namespace OpenFeign.net
                 endPoint += query.ToString();
             }
 
-            endPoint = serverAddress + endPoint;
+            endPoint = ServerAddress + endPoint;
 
             var message = new HttpRequestMessage(requestMethod.Method, endPoint);
             foreach (var headerParameter in headerParameters)

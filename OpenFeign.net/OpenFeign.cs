@@ -7,14 +7,14 @@ namespace OpenFeign.net
 {
     public class OpenFeign
     {
-        public static T GenerateClient<T>()
+        public static T GenerateClient<T>() where T:class
         {
-            return DispatchProxy.Create<T, HttpProxy>();
+            return HttpProxy.Create<T>();
         }
 
         public static object GenerateClientByType(Type type)
         {
-            var method = typeof(OpenFeign).GetMethod("GenerateClient");
+            var method = typeof(OpenFeign).GetMethod(nameof(GenerateClient));
             var generic = method.MakeGenericMethod(type);
             return generic.Invoke(null, null);
         }
