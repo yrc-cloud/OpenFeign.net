@@ -11,3 +11,4 @@
  - [ ] add fallback
  - [ ] add logs
  - [ ] support more contracts
+ - [ ] support Tye
