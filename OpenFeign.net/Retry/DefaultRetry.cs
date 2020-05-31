@@ -1,4 +1,4 @@
-﻿using OpenFeign.net.Exception;
+﻿using OpenFeign.net.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Text;

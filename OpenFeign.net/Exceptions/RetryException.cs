@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 
-namespace OpenFeign.net.Exception
+namespace OpenFeign.net.Exceptions
 {
     public class RetryException : FeignException
     {

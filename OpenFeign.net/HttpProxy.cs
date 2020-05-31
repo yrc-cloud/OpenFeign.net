@@ -18,7 +18,7 @@ namespace OpenFeign.net
 
         protected string ServerAddress { get; set; }
 
-        public void SetServerAddress(string url)
+        private void SetServerAddress(string url)
         {
             if (!string.IsNullOrEmpty(ServerAddress))
             {
