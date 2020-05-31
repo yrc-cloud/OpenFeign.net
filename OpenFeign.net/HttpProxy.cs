@@ -9,6 +9,8 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using System.Collections.Concurrent;
+using OpenFeign.net.Reflection;
 
 namespace OpenFeign.net
 {
@@ -17,6 +19,8 @@ namespace OpenFeign.net
         private HttpClient HttpClient => new HttpClient();
 
         protected string ServerAddress { get; set; }
+
+        protected ConcurrentDictionary<string, MethodProperty> Methods { get; } = new ConcurrentDictionary<string, MethodProperty>();
 
         private void SetServerAddress(string url)
         {
@@ -59,40 +63,38 @@ namespace OpenFeign.net
             var headerParameters = new Dictionary<string, string>();
             var bodyParameters = new Dictionary<string, object>();
 
-            for (var index = 0; index < targetMethod.GetParameters().Length; index++)
+            var methodInfo = Methods.GetOrAdd(targetMethod.Name, name =>
             {
-                var parameter = targetMethod.GetParameters()[index];
+                return GetMethodProperty(targetMethod);
+            });
+
+            for (var index = 0; index < methodInfo.Parameters.Count; index++)
+            {
+                var parameterInfo = methodInfo.Parameters[index];
                 var arg = args.GetValue(index);
 
-                var parameterType = parameter.GetCustomAttribute<ParameterAttribute>();
-                if (parameterType == null)
-                {
-                    throw new ArgumentException($"{targetMethod.Name}:{parameter.Name} don't have an attribute");
-                }
-                var key = string.IsNullOrEmpty(parameterType.Name) ? parameter.Name : parameterType.Name;
-                switch (parameterType.ParameterType)
+                switch (parameterInfo.Type)
                 {
                     case ParameterType.Path:
                         //TODO: this should not convert to string
-                        pathVariables.Add(key, arg?.ToString());
+                        pathVariables.Add(parameterInfo.Name, arg?.ToString());
                         break;
                     case ParameterType.Query:
                         //TODO: this should not convert to string
-                        requestParameters.Add(key, arg?.ToString());
+                        requestParameters.Add(parameterInfo.Name, arg?.ToString());
                         break;
                     case ParameterType.Body:
-                        bodyParameters.Add(key, arg);
+                        bodyParameters.Add(parameterInfo.Name, arg);
                         break;
                     case ParameterType.Header:
-                        headerParameters.Add(key, arg?.ToString());
+                        headerParameters.Add(parameterInfo.Name, arg?.ToString());
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
             }
 
-            var requestMethod = targetMethod.GetCustomAttribute<HttpRequestMethodAttribute>();
-            var endPoint = requestMethod.Path;
+            var endPoint = methodInfo.Path;
             endPoint = pathVariables.Aggregate(endPoint, (current, entry) => current.Replace($"{{{entry.Key}}}", entry.Value));
 
             var query = new StringBuilder();
@@ -110,7 +112,7 @@ namespace OpenFeign.net
 
             endPoint = ServerAddress + endPoint;
 
-            var message = new HttpRequestMessage(requestMethod.Method, endPoint);
+            var message = new HttpRequestMessage(methodInfo.HttpMethod, endPoint);
             foreach (var headerParameter in headerParameters)
             {
                 message.Headers.Add(headerParameter.Key, headerParameter.Value);
@@ -161,6 +163,31 @@ namespace OpenFeign.net
         protected async Task InvokeWithNoResultAsync(HttpRequestMessage message)
         {
             await HttpClient.SendAsync(message);
+        }
+
+        protected MethodProperty GetMethodProperty(MethodInfo method)
+        {
+            var methodProperty = new MethodProperty();
+            var requestMethod = method.GetCustomAttribute<HttpRequestMethodAttribute>();
+            methodProperty.Path = requestMethod.Path;
+            methodProperty.HttpMethod = requestMethod.Method;
+            methodProperty.Parameters = new List<Reflection.ParameterInfo>();
+            foreach(var param in method.GetParameters())
+            {
+                var parameterType = param.GetCustomAttribute<ParameterAttribute>();
+                if (parameterType == null)
+                {
+                    throw new ArgumentException($"{method.Name}:{param.Name} don't have an attribute");
+                }
+                var key = string.IsNullOrEmpty(parameterType.Name) ? param.Name : parameterType.Name;
+                methodProperty.Parameters.Add(new Reflection.ParameterInfo(
+                    key,
+                    parameterType.ParameterType,
+                    Reflection.ParameterInfo.IsSimpleType(param.GetType())
+                    ));
+            }
+
+            return methodProperty;
         }
     }
 }
